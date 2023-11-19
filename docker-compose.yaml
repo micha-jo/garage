@@ -1,0 +1,64 @@
+
+version: "3"
+services:
+  nginx:    
+    build:
+      context: .
+      dockerfile: docker/nginx/Dockerfile
+    expose:
+      - 80
+    ports:
+      - 80:${NGINX_PORT}
+    networks:
+      - internal    
+    volumes:
+      - ./app/:/var/www
+      - ./logs/nginx:/var/log/nginx/
+
+  php:    
+    build:
+      context: .
+      dockerfile: docker/php/Dockerfile
+      args: 
+        - TIMEZONE=${TIMEZONE}
+      target: ${ENV}
+    networks:
+      - internal    
+    volumes:
+      - ./app/:/var/www
+      - ./logs/php.log:/var/log/fpm-php.www.log
+
+  mariadb:
+    image: mariadb    
+    expose:
+      - ${MYSQL_PORT}   
+    ports:
+      - ${MYSQL_PORT}:${MYSQL_PORT} 
+    networks:
+      - internal    
+    volumes:
+      - mariadb:/var/lib/mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_USER_PASSWORD}
+
+  phpMyAdmin:
+    image: phpmyadmin
+    expose:
+      - 8080
+    ports:
+      - 8080:${NGINX_PORT}
+    networks:
+      - internal
+    environment:
+      - PMA_ARBITRARY=0 
+      - PMA_HOST=mariadb
+      - PMA_PORT=${MYSQL_PORT}
+
+networks:
+  internal:
+
+volumes:
+  mariadb:
+    driver: local
